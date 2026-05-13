@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>DONA Mailroom</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Fraunces:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet"/>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root {
+      --plum-dark: #5B1B47;
+      --plum: #970C58;
+      --pink: #F81490;
+      --grad: linear-gradient(135deg, #5B1B47 0%, #970C58 50%, #F81490 100%);
+      --grad-soft: linear-gradient(135deg, #5B1B4712 0%, #F8149010 100%);
+      --cream: #F7F5F1;
+      --grey-light: #ECEAE5;
+      --white: #FFFFFF;
+      --text: #2A1A24;
+      --text-muted: #9A8090;
+      --border: #E8E0E5;
+      --pink-pale: #FDE8F4;
+      --pink-soft: #F9C6E5;
+      --success: #2D9E6B;
+      --success-pale: #E6F7F0;
+      --shadow-sm: 0 2px 8px rgba(91,27,71,0.08);
+      --shadow-md: 0 8px 32px rgba(91,27,71,0.12);
+      --shadow-lg: 0 24px 64px rgba(91,27,71,0.18);
+      --radius: 16px;
+      --radius-sm: 10px;
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { font-family:'Outfit',sans-serif; background:var(--cream); color:var(--text); min-height:100vh; }
+
+    /* LOGIN */
+    #login-page { min-height:100vh; display:flex; align-items:center; justify-content:center; background:var(--cream); position:relative; overflow:hidden; }
+    #login-page::before { content:''; position:absolute; width:600px; height:600px; border-radius:50%; background:radial-gradient(circle,#F8149018 0%,transparent 70%); top:-200px; right:-200px; }
+    #login-page::after { content:''; position:absolute; width:400px; height:400px; border-radius:50%; background:radial-gradient(circle,#5B1B4712 0%,transparent 70%); bottom:-100px; left:-100px; }
+    .login-wrap { display:grid; grid-template-columns:1fr 1fr; width:880px; min-height:560px; background:var(--white); border-radius:24px; box-shadow:var(--shadow-lg); overflow:hidden; position:relative; z-index:1; }
+    .login-left { background:var(--grad); padding:56px 48px; display:flex; flex-direction:column; justify-content:space-between; position:relative; overflow:hidden; }
+    .login-left::before { content:''; position:absolute; width:300px; height:300px; border-radius:50%; background:rgba(255,255,255,0.06); bottom:-80px; right:-80px; }
+    .ll-logo .logo-mark { width:52px; height:52px; background:rgba(255,255,255,0.2); border-radius:14px; display:flex; align-items:center; justify-content:center; font-size:24px; margin-bottom:16px; }
+    .ll-logo .brand-name { font-family:'Fraunces',serif; font-size:28px; color:white; font-weight:600; }
+    .ll-logo .brand-sub { font-size:13px; color:rgba(255,255,255,0.65); margin-top:4px; }
+    .ll-feature { display:flex; align-items:center; gap:12px; margin-bottom:16px; }
+    .ll-feature .feat-icon { width:36px; height:36px; background:rgba(255,255,255,0.15); border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:16px; flex-shrink:0; }
+    .ll-feature .feat-text { font-size:14px; color:rgba(255,255,255,0.85); line-height:1.4; }
+    .login-right { padding:56px 48px; display:flex; flex-direction:column; justify-content:center; }
+    .login-right h2 { font-family:'Fraunces',serif; font-size:28px; color:var(--text); margin-bottom:6px; }
+    .login-right p { font-size:14px; color:var(--text-muted); margin-bottom:36px; }
+    .login-tabs { display:flex; background:var(--grey-light); border-radius:10px; padding:4px; margin-bottom:28px; }
+    .login-tab { flex:1; padding:8px 16px; text-align:center; font-size:13px; font-weight:500; color:var(--text-muted); cursor:pointer; border-radius:7px; transition:all 0.2s; }
+    .login-tab.active { background:var(--white); color:var(--plum); box-shadow:var(--shadow-sm); }
+    .field { margin-bottom:18px; }
+    .field label { display:block; font-size:12px; font-weight:600; color:var(--text-muted); letter-spacing:0.8px; text-transform:uppercase; margin-bottom:8px; }
+    .field input, .field select, .field textarea { width:100%; padding:13px 16px; border:1.5px solid var(--border); border-radius:var(--radius-sm); font-family:'Outfit',sans-serif; font-size:15px; background:var(--cream); color:var(--text); transition:all 0.2s; outline:none; }
+    .field input:focus, .field select:focus, .field textarea:focus { border-color:var(--pink); background:var(--white); box-shadow:0 0 0 3px rgba(248,20,144,0.08); }
+    .field textarea { resize:vertical; min-height:90px; }
+    .btn-grad { width:100%; padding:14px; background:var(--grad); color:white; border:none; border-radius:var(--radius-sm); font-family:'Outfit',sans-serif; font-size:15px; font-weight:600; cursor:pointer; transition:opacity 0.2s,transform 0.1s; letter-spacing:0.3px; }
+    .btn-grad:hover { opacity:0.9; transform:translateY(-1px); }
+    .btn-grad:active { transform:translateY(0); }
+    .btn-grad:disabled { opacity:0.55; cursor:not-allowed; transform:none; }
+    .error-msg { background:#fdf0f7; border:1px solid var(--pink-soft); color:var(--plum); padding:10px 14px; border-radius:var(--radius-sm); font-size:13px; margin-top:14px; }
+
+    /* APP */
+    #app { display:none; }
+    .layout { display:grid; grid-template-columns:260px 1fr; min-height:100vh; }
+    .sidebar { background:var(--white); border-right:1px solid var(--border); display:flex; flex-direction:column; position:sticky; top:0; height:100vh; overflow-y:auto; }
+    .sb-logo { padding:28px 24px 20px; border-bottom:1px solid var(--border); }
+    .logo-pill { display:inline-flex; align-items:center; gap:10px; }
+    .logo-icon { width:40px; height:40px; background:var(--grad); border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:18px; }
+    .logo-text .name { font-family:'Fraunces',serif; font-size:20px; color:var(--text); font-weight:600; line-height:1; }
+    .logo-text .sub { font-size:10px; color:var(--text-muted); letter-spacing:1px; text-transform:uppercase; margin-top:2px; }
+    .sb-user { margin:16px; padding:14px 16px; background:var(--grad-soft); border-radius:var(--radius-sm); border:1px solid var(--pink-pale); }
+    .sb-user .u-name { font-size:14px; font-weight:600; color:var(--plum-dark); }
+    .sb-user .u-role { font-size:11px; color:var(--text-muted); margin-top:2px; }
+    .sb-nav { flex:1; padding:12px; }
+    .nav-item { display:flex; align-items:center; gap:10px; padding:11px 14px; border-radius:var(--radius-sm); font-size:14px; font-weight:500; color:var(--text-muted); cursor:pointer; transition:all 0.15s; margin-bottom:2px; }
+    .nav-item:hover { background:var(--cream); color:var(--text); }
+    .nav-item.active { background:var(--pink-pale); color:var(--plum); font-weight:600; }
+    .ni-icon { width:32px; height:32px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:15px; background:var(--grey-light); flex-shrink:0; transition:all 0.15s; }
+    .nav-item.active .ni-icon { background:var(--grad); }
+    .ni-badge { margin-left:auto; background:var(--pink); color:white; font-size:10px; font-weight:700; padding:2px 7px; border-radius:20px; min-width:20px; text-align:center; }
+    .sb-footer { padding:16px; border-top:1px solid var(--border); }
+    .btn-logout { display:flex; align-items:center; gap:8px; padding:10px 14px; border-radius:var(--radius-sm); font-size:13px; color:var(--text-muted); cursor:pointer; transition:all 0.15s; width:100%; border:none; background:none; font-family:'Outfit',sans-serif; font-weight:500; }
+    .btn-logout:hover { background:var(--cream); color:var(--text); }
+    .main { padding:40px; min-height:100vh; background:var(--cream); }
+    .page { display:none; }
+    .page.active { display:block; }
+    .page-head { margin-bottom:32px; }
+    .page-head h1 { font-family:'Fraunces',serif; font-size:32px; color:var(--text); font-weight:600; letter-spacing:-0.5px; }
+    .page-head p { font-size:14px; color:var(--text-muted); margin-top:4px; }
+    .page-head-row { display:flex; align-items:flex-start; justify-content:space-between; }
+
+    /* STATS */
+    .stats-row { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:28px; }
+    .stat-card { background:var(--white); border:1px solid var(--border); border-radius:var(--radius); padding:24px; position:relative; overflow:hidden; }
+    .stat-card::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; background:var(--grad); }
+    .sc-icon { width:44px; height:44px; border-radius:12px; background:var(--pink-pale); display:flex; align-items:center; justify-content:center; font-size:20px; margin-bottom:16px; }
+    .sc-val { font-family:'Fraunces',serif; font-size:40px; color:var(--text); line-height:1; margin-bottom:4px; }
+    .sc-label { font-size:13px; color:var(--text-muted); font-weight:500; }
+
+    /* CARD */
+    .card { background:var(--white); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; }
+    .card-head { padding:20px 24px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
+    .card-head h2 { font-size:16px; font-weight:600; color:var(--text); }
+
+    /* TABLE */
+    table { width:100%; border-collapse:collapse; }
+    th { padding:12px 24px; text-align:left; font-size:11px; font-weight:700; color:var(--text-muted); letter-spacing:0.8px; text-transform:uppercase; background:var(--cream); border-bottom:1px solid var(--border); }
+    td { padding:14px 24px; font-size:14px; border-bottom:1px solid var(--border); vertical-align:middle; }
+    tr:last-child td { border-bottom:none; }
+    tbody tr { transition:background 0.1s; }
+    tbody tr:hover td { background:#fdf8fb; }
+
+    /* BADGES */
+    .badge { display:inline-flex; align-items:center; gap:5px; padding:4px 10px; border-radius:20px; font-size:12px; font-weight:600; }
+    .badge-new { background:var(--pink-pale); color:var(--plum); }
+    .badge-read { background:var(--success-pale); color:var(--success); }
+    .badge-archived { background:var(--grey-light); color:var(--text-muted); }
+
+    /* BTN */
+    .btn { display:inline-flex; align-items:center; gap:6px; padding:8px 16px; border-radius:var(--radius-sm); font-size:13px; font-weight:600; cursor:pointer; border:none; font-family:'Outfit',sans-serif; transition:all 0.15s; }
+    .btn-pink { background:var(--pink-pale); color:var(--plum); }
+    .btn-pink:hover { background:var(--grad); color:white; }
+    .btn-outline { background:transparent; border:1.5px solid var(--border); color:var(--text-muted); }
+    .btn-outline:hover { border-color:var(--plum); color:var(--plum); }
+    .btn-success { background:var(--success-pale); color:var(--success); }
+    .btn-success:hover { background:var(--success); color:white; }
+
+    /* UPLOAD */
+    .upload-grid { display:grid; grid-template-columns:1fr 1fr; gap:24px; }
+    .upload-left, .upload-right { background:var(--white); border:1px solid var(--border); border-radius:var(--radius); padding:32px; }
+    .upload-left h2, .upload-right h2 { font-family:'Fraunces',serif; font-size:20px; margin-bottom:24px; color:var(--text); }
+    .drop-zone { border:2px dashed var(--border); border-radius:var(--radius); padding:48px 32px; text-align:center; cursor:pointer; transition:all 0.2s; background:var(--cream); }
+    .drop-zone:hover, .drop-zone.over { border-color:var(--pink); background:var(--pink-pale); }
+    .dz-icon { font-size:40px; margin-bottom:12px; }
+    .dz-title { font-size:15px; font-weight:600; color:var(--text); margin-bottom:4px; }
+    .dz-sub { font-size:12px; color:var(--text-muted); }
+    .dz-file { margin-top:12px; font-size:13px; font-weight:600; color:var(--plum); background:var(--pink-pale); display:none; align-items:center; gap:6px; padding:6px 14px; border-radius:20px; }
+    .preview-box { margin-top:12px; background:var(--cream); border:1px solid var(--border); border-radius:var(--radius-sm); padding:12px 16px; display:none; align-items:center; gap:12px; }
+    .preview-box.show { display:flex; }
+    .preview-box img { width:48px; height:48px; object-fit:cover; border-radius:6px; }
+    .pv-name { font-size:13px; font-weight:500; }
+    .pv-size { font-size:11px; color:var(--text-muted); }
+    .progress-bar { background:var(--grey-light); border-radius:20px; height:6px; overflow:hidden; margin-top:16px; }
+    .progress-fill { height:100%; background:var(--grad); border-radius:20px; transition:width 0.3s; }
+
+    /* CLIENTS */
+    .client-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:16px; }
+    .client-card { background:var(--white); border:1px solid var(--border); border-radius:var(--radius); padding:24px; transition:box-shadow 0.2s,transform 0.2s; }
+    .client-card:hover { box-shadow:var(--shadow-md); transform:translateY(-2px); }
+    .client-avatar { width:48px; height:48px; border-radius:14px; background:var(--grad); display:flex; align-items:center; justify-content:center; font-size:20px; color:white; font-weight:700; margin-bottom:14px; font-family:'Fraunces',serif; }
+    .cc-name { font-size:16px; font-weight:600; color:var(--text); }
+    .cc-email { font-size:13px; color:var(--text-muted); margin-top:2px; }
+    .cc-company { display:inline-flex; align-items:center; gap:5px; background:var(--pink-pale); color:var(--plum); font-size:12px; font-weight:600; padding:4px 10px; border-radius:20px; margin-top:10px; }
+    .cc-actions { display:flex; gap:8px; margin-top:16px; padding-top:16px; border-top:1px solid var(--border); }
+
+    /* COURRIERS CLIENT */
+    .welcome-banner { background:var(--grad); border-radius:var(--radius); padding:32px 36px; margin-bottom:28px; display:flex; align-items:center; justify-content:space-between; color:white; position:relative; overflow:hidden; }
+    .welcome-banner::after { content:''; position:absolute; width:250px; height:250px; border-radius:50%; background:rgba(255,255,255,0.07); right:-50px; top:-80px; }
+    .welcome-banner h2 { font-family:'Fraunces',serif; font-size:26px; font-weight:600; margin-bottom:4px; }
+    .welcome-banner p { font-size:14px; opacity:0.75; }
+    .wb-icon { font-size:56px; position:relative; z-index:1; opacity:0.8; }
+    .filter-tabs { display:flex; gap:8px; margin-bottom:20px; }
+    .filter-tab { padding:8px 18px; border-radius:20px; font-size:13px; font-weight:600; cursor:pointer; border:1.5px solid var(--border); background:var(--white); color:var(--text-muted); transition:all 0.15s; }
+    .filter-tab.active { background:var(--pink-pale); color:var(--plum); border-color:var(--pink-soft); }
+    .courrier-list { display:flex; flex-direction:column; gap:10px; }
+    .courrier-item { background:var(--white); border:1px solid var(--border); border-radius:var(--radius); padding:20px 24px; display:flex; align-items:center; gap:16px; transition:box-shadow 0.2s; }
+    .courrier-item:hover { box-shadow:var(--shadow-sm); }
+    .courrier-item.unread { border-left:3px solid var(--pink); }
+    .courrier-item.archived { opacity:0.65; }
+    .ci-icon { width:44px; height:44px; border-radius:12px; background:var(--pink-pale); display:flex; align-items:center; justify-content:center; font-size:20px; flex-shrink:0; }
+    .ci-info { flex:1; min-width:0; }
+    .ci-title { font-size:15px; font-weight:600; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .ci-meta { font-size:12px; color:var(--text-muted); margin-top:3px; }
+    .ci-actions { display:flex; gap:8px; flex-shrink:0; }
+
+    /* MODAL */
+    .modal-overlay { position:fixed; inset:0; background:rgba(91,27,71,0.25); backdrop-filter:blur(4px); display:none; align-items:center; justify-content:center; z-index:1000; }
+    .modal-overlay.open { display:flex; }
+    .modal { background:var(--white); border-radius:20px; padding:40px; width:480px; max-height:90vh; overflow-y:auto; box-shadow:var(--shadow-lg); }
+    .modal h2 { font-family:'Fraunces',serif; font-size:26px; margin-bottom:6px; color:var(--text); }
+    .modal .modal-sub { font-size:14px; color:var(--text-muted); margin-bottom:28px; }
+    .modal-actions { display:flex; gap:12px; margin-top:28px; justify-content:flex-end; }
+
+    /* EMPTY */
+    .empty { text-align:center; padding:72px 32px; }
+    .empty .e-icon { font-size:52px; margin-bottom:16px; }
+    .empty h3 { font-family:'Fraunces',serif; font-size:22px; color:var(--text); }
+    .empty p { font-size:14px; color:var(--text-muted); margin-top:6px; }
+
+    /* TOAST */
+    .toast { position:fixed; bottom:28px; right:28px; padding:16px 22px; border-radius:var(--radius-sm); font-size:14px; font-weight:500; z-index:9999; transform:translateY(80px); opacity:0; transition:all 0.35s cubic-bezier(0.34,1.56,0.64,1); max-width:340px; box-shadow:var(--shadow-md); }
+    .toast.show { transform:translateY(0); opacity:1; }
+    .toast.success { background:var(--grad); color:white; }
+    .toast.error { background:var(--plum-dark); color:white; }
+    .toast.info { background:var(--white); color:var(--text); border:1px solid var(--border); }
+    .loading { text-align:center; padding:48px; color:var(--text-muted); font-size:14px; }
+    .td-client strong { display:block; font-weight:600; }
+    .td-client span { font-size:12px; color:var(--text-muted); }
+  </style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-page">
+  <div class="login-wrap">
+    <div class="login-left">
+      <div class="ll-logo">
+        <div class="logo-mark">📬</div>
+        <div class="brand-name">DONA Mailroom</div>
+        <div class="brand-sub">Votre courrier. Simplement.</div>
+      </div>
+      <div class="ll-features">
+        <div class="ll-feature"><div class="feat-icon">🔒</div><div class="feat-text">Espace sécurisé et privé pour chaque dirigeant</div></div>
+        <div class="ll-feature"><div class="feat-icon">📄</div><div class="feat-text">Consultez vos courriers scannés à tout moment</div></div>
+        <div class="ll-feature"><div class="feat-icon">✅</div><div class="feat-text">Suivez la lecture et archivez en un clic</div></div>
+      </div>
+    </div>
+    <div class="login-right">
+      <h2>Connexion</h2>
+      <p>Accédez à votre espace courrier</p>
+      <div class="login-tabs">
+        <div class="login-tab active" onclick="switchTab('client')">Espace client</div>
+        <div class="login-tab" onclick="switchTab('admin')">Administration</div>
+      </div>
+      <div class="field"><label>Email</label><input type="email" id="login-email" placeholder="votre@email.com"/></div>
+      <div class="field"><label>Mot de passe</label><input type="password" id="login-password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"/></div>
+      <button class="btn-grad" id="login-btn" onclick="doLogin()">Se connecter →</button>
+      <div id="login-error" class="error-msg" style="display:none"></div>
+    </div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="sb-logo">
+        <div class="logo-pill">
+          <div class="logo-icon">📬</div>
+          <div class="logo-text"><div class="name">DONA</div><div class="sub">Mailroom</div></div>
+        </div>
+      </div>
+      <div class="sb-user">
+        <div class="u-name" id="sb-name">—</div>
+        <div class="u-role" id="sb-role">—</div>
+      </div>
+      <nav class="sb-nav" id="sb-nav"></nav>
+      <div class="sb-footer"><button class="btn-logout" onclick="doLogout()">↩ Se déconnecter</button></div>
+    </aside>
+
+    <main class="main">
+
+      <!-- DASHBOARD -->
+      <div class="page" id="page-dashboard">
+        <div class="page-head"><h1>Tableau de bord</h1><p>Vue d'ensemble de DONA Mailroom</p></div>
+        <div class="stats-row">
+          <div class="stat-card"><div class="sc-icon">👥</div><div class="sc-val" id="stat-clients">—</div><div class="sc-label">Clients domiciliés</div></div>
+          <div class="stat-card"><div class="sc-icon">📬</div><div class="sc-val" id="stat-total">—</div><div class="sc-label">Courriers envoyés</div></div>
+          <div class="stat-card"><div class="sc-icon">🆕</div><div class="sc-val" id="stat-unread">—</div><div class="sc-label">Non lus</div></div>
+          <div class="stat-card"><div class="sc-icon">✅</div><div class="sc-val" id="stat-read">—</div><div class="sc-label">Lus</div></div>
+        </div>
+        <div class="card">
+          <div class="card-head"><h2>Derniers courriers déposés</h2></div>
+          <table><thead><tr><th>Date</th><th>Client</th><th>Description</th><th>Statut</th><th></th></tr></thead><tbody id="dash-recent"></tbody></table>
+        </div>
+      </div>
+
+      <!-- DÉPOSER -->
+      <div class="page" id="page-upload">
+        <div class="page-head"><h1>Déposer un courrier</h1><p>Uploadez le scan et assignez-le au bon client</p></div>
+        <div class="upload-grid">
+          <div class="upload-left">
+            <h2>Informations</h2>
+            <div class="field"><label>Client destinataire *</label><select id="upload-client"><option value="">— Sélectionner un client —</option></select></div>
+            <div class="field"><label>Description *</label><textarea id="upload-desc" placeholder="Ex : Lettre URSSAF, Relevé BNP, Avis d'imposition..."></textarea></div>
+            <div class="field"><label>Type de courrier</label>
+              <select id="upload-type">
+                <option>Courrier ordinaire</option><option>Lettre recommandée</option><option>Document officiel</option><option>Relevé bancaire</option><option>Facture</option><option>Colis</option><option>Autre</option>
+              </select>
+            </div>
+            <button class="btn-grad" id="upload-btn" onclick="uploadCourrier()" style="margin-top:8px">📬 Envoyer le courrier</button>
+            <div id="upload-error" class="error-msg" style="display:none;margin-top:12px"></div>
+            <div id="upload-progress" style="display:none"><div style="font-size:13px;color:var(--text-muted);margin-top:16px">Envoi en cours...</div><div class="progress-bar"><div class="progress-fill" id="prog-fill" style="width:0%"></div></div></div>
+          </div>
+          <div class="upload-right">
+            <h2>Fichier scanné</h2>
+            <div class="drop-zone" id="drop-zone" onclick="document.getElementById('file-input').click()" ondragover="dzOver(event)" ondrop="dzDrop(event)" ondragleave="dzLeave()">
+              <div class="dz-icon">📁</div>
+              <div class="dz-title">Glissez votre fichier ici</div>
+              <div class="dz-sub">ou cliquez pour sélectionner</div>
+              <div class="dz-sub" style="margin-top:6px">PDF, JPG, PNG — max 20 Mo</div>
+              <div class="dz-file" id="dz-name"></div>
+            </div>
+            <input type="file" id="file-input" style="display:none" accept=".pdf,.jpg,.jpeg,.png" onchange="setFile(this.files[0])"/>
+            <div class="preview-box" id="preview-box">
+              <img id="preview-img" src="" alt="" style="display:none"/>
+              <div><div class="pv-name" id="preview-name"></div><div class="pv-size" id="preview-size"></div></div>
+              <button class="btn btn-outline" style="margin-left:auto" onclick="clearFile()">✕</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CLIENTS -->
+      <div class="page" id="page-clients">
+        <div class="page-head page-head-row">
+          <div><h1>Clients</h1><p>Gestion des dirigeants domiciliés</p></div>
+          <button class="btn-grad" style="padding:12px 24px;width:auto" onclick="openModal()">+ Nouveau client</button>
+        </div>
+        <div class="client-grid" id="clients-grid"></div>
+      </div>
+
+      <!-- MON COURRIER -->
+      <div class="page" id="page-mon-courrier">
+        <div class="welcome-banner">
+          <div><h2>Bonjour, <span id="client-name">—</span> 👋</h2><p>Votre espace courrier sécurisé DONA</p></div>
+          <div class="wb-icon">📬</div>
+        </div>
+        <div class="filter-tabs">
+          <div class="filter-tab active" onclick="filterCourriers('all',this)">Tous</div>
+          <div class="filter-tab" onclick="filterCourriers('unread',this)">Non lus</div>
+          <div class="filter-tab" onclick="filterCourriers('read',this)">Lus</div>
+          <div class="filter-tab" onclick="filterCourriers('archived',this)">Archivés</div>
+        </div>
+        <div class="courrier-list" id="client-list"></div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modal-client">
+  <div class="modal">
+    <h2>Nouveau client</h2>
+    <div class="modal-sub">Créez l'espace courrier du dirigeant</div>
+    <div class="field"><label>Prénom et nom *</label><input type="text" id="nc-name" placeholder="Marie Dupont"/></div>
+    <div class="field"><label>Société</label><input type="text" id="nc-company" placeholder="SARL Exemple"/></div>
+    <div class="field"><label>Email *</label><input type="email" id="nc-email" placeholder="dirigeant@societe.fr"/></div>
+    <div class="field"><label>Mot de passe initial *</label><input type="text" id="nc-password" placeholder="Minimum 6 caractères"/></div>
+    <div id="nc-error" class="error-msg" style="display:none"></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal()" style="padding:10px 20px">Annuler</button>
+      <button class="btn-grad" style="width:auto;padding:12px 28px" id="nc-btn" onclick="createClient()">Créer le compte</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SUPABASE_URL = 'https://ctreucinpucicbtiofik.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN0cmV1Y2lucHVjaWNidGlvZmlrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2NjQ2OTIsImV4cCI6MjA5NDI0MDY5Mn0.um_XCwUcP_p37zlEUqjTgCG8Vr50QqxgBY2zdmzREEI';
+const ADMIN_EMAILS = ['donaassistant@gmail.com'];
+const { createClient } = supabase;
+const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let user=null, isAdmin=false, selectedFile=null, allCourriers=[];
+
+async function init() {
+  const { data:{session} } = await sb.auth.getSession();
+  if (session) await loadApp(session.user);
+}
+
+function switchTab(t) {
+  document.querySelectorAll('.login-tab').forEach((el,i)=>el.classList.toggle('active',(i===0&&t==='client')||(i===1&&t==='admin')));
+}
+
+async function doLogin() {
+  const email=document.getElementById('login-email').value.trim();
+  const pass=document.getElementById('login-password').value;
+  const btn=document.getElementById('login-btn');
+  const err=document.getElementById('login-error');
+  if (!email||!pass){showErr(err,'Veuillez remplir tous les champs.');return;}
+  btn.textContent='Connexion...'; btn.disabled=true; err.style.display='none';
+  const {data,error}=await sb.auth.signInWithPassword({email,password:pass});
+  if (error){showErr(err,'Email ou mot de passe incorrect.');btn.textContent='Se connecter →';btn.disabled=false;return;}
+  await loadApp(data.user);
+}
+
+async function doLogout() {
+  await sb.auth.signOut();
+  document.getElementById('app').style.display='none';
+  document.getElementById('login-page').style.display='flex';
+  document.getElementById('login-btn').textContent='Se connecter →';
+  document.getElementById('login-btn').disabled=false;
+  document.getElementById('login-email').value='';
+  document.getElementById('login-password').value='';
+}
+
+async function loadApp(u) {
+  user=u; isAdmin=ADMIN_EMAILS.includes(u.email);
+  document.getElementById('login-page').style.display='none';
+  document.getElementById('app').style.display='block';
+  const {data:profile}=await sb.from('profiles').select('*').eq('id',u.id).single();
+  const name=profile?.full_name||u.email.split('@')[0];
+  document.getElementById('sb-name').textContent=name;
+  document.getElementById('sb-role').textContent=isAdmin?'⚡ Administratrice DONA':(profile?.company||'Client domicilié');
+  buildNav();
+  if (isAdmin){showPage('dashboard');loadDashboard();}
+  else{document.getElementById('client-name').textContent=name.split(' ')[0];showPage('mon-courrier');loadClientCourriers();}
+}
+
+function buildNav() {
+  const items=isAdmin?[{id:'dashboard',icon:'▦',label:'Tableau de bord'},{id:'upload',icon:'📬',label:'Déposer un courrier'},{id:'clients',icon:'👥',label:'Clients'}]:[{id:'mon-courrier',icon:'📬',label:'Mon courrier'}];
+  document.getElementById('sb-nav').innerHTML=items.map(i=>`
+    <div class="nav-item" id="nav-${i.id}" onclick="showPage('${i.id}')">
+      <div class="ni-icon">${i.icon}</div><span>${i.label}</span>
+      ${i.id==='dashboard'?'<span class="ni-badge" id="nav-badge" style="display:none">0</span>':''}
+    </div>`).join('');
+}
+
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-'+id)?.classList.add('active');
+  document.getElementById('nav-'+id)?.classList.add('active');
+  if(id==='upload')loadClientsSelect();
+  if(id==='clients')loadClients();
+}
+
+async function loadDashboard() {
+  const [{count:c},{count:t},{count:u},{count:r}]=await Promise.all([
+    sb.from('profiles').select('*',{count:'exact',head:true}).eq('role','client'),
+    sb.from('courriers').select('*',{count:'exact',head:true}),
+    sb.from('courriers').select('*',{count:'exact',head:true}).eq('read',false).eq('archived',false),
+    sb.from('courriers').select('*',{count:'exact',head:true}).eq('read',true),
+  ]);
+  document.getElementById('stat-clients').textContent=c??0;
+  document.getElementById('stat-total').textContent=t??0;
+  document.getElementById('stat-unread').textContent=u??0;
+  document.getElementById('stat-read').textContent=r??0;
+  const badge=document.getElementById('nav-badge');
+  if(badge&&u>0){badge.textContent=u;badge.style.display='inline-block';}
+  const {data}=await sb.from('courriers').select('*,profiles(full_name,company)').order('created_at',{ascending:false}).limit(10);
+  const tbody=document.getElementById('dash-recent');
+  if(!data?.length){tbody.innerHTML=`<tr><td colspan="5" style="text-align:center;padding:48px;color:var(--text-muted)">Aucun courrier déposé pour l'instant</td></tr>`;return;}
+  tbody.innerHTML=data.map(c=>`<tr>
+    <td>${fDate(c.created_at)}</td>
+    <td class="td-client"><strong>${c.profiles?.full_name||'—'}</strong><span>${c.profiles?.company||''}</span></td>
+    <td>${c.description||'—'}</td>
+    <td><span class="badge ${c.archived?'badge-archived':c.read?'badge-read':'badge-new'}">${c.archived?'📦 Archivé':c.read?'✅ Lu':'🆕 Nouveau'}</span></td>
+    <td><button class="btn btn-pink" onclick="adminDownload('${c.file_path}','${c.file_name||'courrier'}')">⬇</button></td>
+  </tr>`).join('');
+}
+
+async function loadClientsSelect() {
+  const {data}=await sb.from('profiles').select('id,full_name,company').eq('role','client').order('full_name');
+  const sel=document.getElementById('upload-client');
+  if(!data?.length){sel.innerHTML='<option>Aucun client — ajoutez-en d\'abord</option>';return;}
+  sel.innerHTML='<option value="">— Sélectionner un client —</option>'+data.map(c=>`<option value="${c.id}">${c.full_name}${c.company?' — '+c.company:''}</option>`).join('');
+}
+
+function dzOver(e){e.preventDefault();document.getElementById('drop-zone').classList.add('over');}
+function dzLeave(){document.getElementById('drop-zone').classList.remove('over');}
+function dzDrop(e){e.preventDefault();dzLeave();if(e.dataTransfer.files[0])setFile(e.dataTransfer.files[0]);}
+
+function setFile(file) {
+  selectedFile=file;
+  const dz=document.getElementById('dz-name');
+  dz.style.display='inline-flex'; dz.textContent='✓ '+file.name;
+  document.getElementById('preview-name').textContent=file.name;
+  document.getElementById('preview-size').textContent=(file.size/1024/1024).toFixed(2)+' Mo';
+  if(file.type.startsWith('image/')){const r=new FileReader();r.onload=e=>{document.getElementById('preview-img').src=e.target.result;};r.readAsDataURL(file);document.getElementById('preview-img').style.display='block';}
+  else{document.getElementById('preview-img').style.display='none';}
+  document.getElementById('preview-box').classList.add('show');
+}
+
+function clearFile(){selectedFile=null;document.getElementById('dz-name').style.display='none';document.getElementById('preview-box').classList.remove('show');document.getElementById('file-input').value='';}
+
+async function uploadCourrier() {
+  const clientId=document.getElementById('upload-client').value;
+  const desc=document.getElementById('upload-desc').value.trim();
+  const type=document.getElementById('upload-type').value;
+  const btn=document.getElementById('upload-btn');
+  const err=document.getElementById('upload-error');
+  const prog=document.getElementById('upload-progress');
+  err.style.display='none';
+  if(!clientId){showErr(err,'Veuillez sélectionner un client.');return;}
+  if(!desc){showErr(err,'Veuillez ajouter une description.');return;}
+  if(!selectedFile){showErr(err,'Veuillez sélectionner un fichier.');return;}
+  btn.textContent='Envoi...'; btn.disabled=true; prog.style.display='block';
+  animateProg();
+  const ext=selectedFile.name.split('.').pop();
+  const filePath=`${clientId}/${Date.now()}.${ext}`;
+  const {error:upErr}=await sb.storage.from('courriers').upload(filePath,selectedFile);
+  if(upErr){showErr(err,'Erreur upload : '+upErr.message);btn.textContent='📬 Envoyer le courrier';btn.disabled=false;prog.style.display='none';return;}
+  const {error:dbErr}=await sb.from('courriers').insert({client_id:clientId,file_path:filePath,file_name:selectedFile.name,description:desc,type,read:false,archived:false});
+  prog.style.display='none'; btn.textContent='📬 Envoyer le courrier'; btn.disabled=false;
+  if(dbErr){showErr(err,'Erreur : '+dbErr.message);return;}
+  showToast('📬 Courrier envoyé avec succès !','success');
+  document.getElementById('upload-desc').value=''; clearFile();
+}
+
+function animateProg(){let p=0;const fill=document.getElementById('prog-fill');const iv=setInterval(()=>{p=Math.min(p+Math.random()*15,90);fill.style.width=p+'%';if(p>=90)clearInterval(iv);},200);}
+
+async function loadClients() {
+  const {data}=await sb.from('profiles').select('*').eq('role','client').order('full_name');
+  const grid=document.getElementById('clients-grid');
+  if(!data?.length){grid.innerHTML=`<div class="empty" style="grid-column:1/-1"><div class="e-icon">👥</div><h3>Aucun client encore</h3><p>Ajoutez votre premier client domicilié</p></div>`;return;}
+  grid.innerHTML=data.map(c=>`
+    <div class="client-card">
+      <div class="client-avatar">${(c.full_name||'?')[0].toUpperCase()}</div>
+      <div class="cc-name">${c.full_name}</div>
+      <div class="cc-email">${c.email||'—'}</div>
+      ${c.company?`<div class="cc-company">🏢 ${c.company}</div>`:''}
+      <div class="cc-actions"><button class="btn btn-pink" onclick="gotoUpload('${c.id}')">📬 Déposer un courrier</button></div>
+    </div>`).join('');
+}
+
+function gotoUpload(clientId){showPage('upload');setTimeout(()=>{document.getElementById('upload-client').value=clientId;},300);}
+function openModal(){document.getElementById('modal-client').classList.add('open');}
+function closeModal(){document.getElementById('modal-client').classList.remove('open');['nc-name','nc-company','nc-email','nc-password'].forEach(id=>document.getElementById(id).value='');document.getElementById('nc-error').style.display='none';}
+
+async function createClient() {
+  const name=document.getElementById('nc-name').value.trim();
+  const co=document.getElementById('nc-company').value.trim();
+  const email=document.getElementById('nc-email').value.trim();
+  const pass=document.getElementById('nc-password').value.trim();
+  const btn=document.getElementById('nc-btn');
+  const err=document.getElementById('nc-error');
+  err.style.display='none';
+  if(!name||!email||!pass){showErr(err,'Champs obligatoires manquants.');return;}
+  if(pass.length<6){showErr(err,'Mot de passe : 6 caractères minimum.');return;}
+  btn.textContent='Création...'; btn.disabled=true;
+  const {data,error}=await sb.auth.signUp({email,password:pass,options:{data:{full_name:name,company:co,role:'client'}}});
+  if(error){showErr(err,error.message);btn.textContent='Créer le compte';btn.disabled=false;return;}
+  if(data.user)await sb.from('profiles').upsert({id:data.user.id,full_name:name,company:co,email,role:'client'});
+  showToast('🎉 Client créé avec succès !','success');
+  closeModal(); btn.textContent='Créer le compte'; btn.disabled=false; loadClients();
+}
+
+let activeFilter='all';
+async function loadClientCourriers() {
+  document.getElementById('client-list').innerHTML='<div class="loading">Chargement de vos courriers</div>';
+  const {data}=await sb.from('courriers').select('*').eq('client_id',user.id).order('created_at',{ascending:false});
+  allCourriers=data||[]; renderCourriers();
+}
+
+function filterCourriers(f,el){activeFilter=f;document.querySelectorAll('.filter-tab').forEach(t=>t.classList.remove('active'));el.classList.add('active');renderCourriers();}
+
+function renderCourriers() {
+  const list=document.getElementById('client-list');
+  let items=allCourriers;
+  if(activeFilter==='unread')items=items.filter(c=>!c.read&&!c.archived);
+  if(activeFilter==='read')items=items.filter(c=>c.read&&!c.archived);
+  if(activeFilter==='archived')items=items.filter(c=>c.archived);
+  if(!items.length){list.innerHTML=`<div class="empty"><div class="e-icon">📭</div><h3>Aucun courrier ici</h3><p>Vos courriers scannés apparaîtront ici dès réception</p></div>`;return;}
+  list.innerHTML=items.map(c=>`
+    <div class="courrier-item ${c.archived?'archived':c.read?'':'unread'}">
+      <div class="ci-icon">${fileIcon(c.file_name)}</div>
+      <div class="ci-info">
+        <div class="ci-title">${c.description||'Courrier reçu'}</div>
+        <div class="ci-meta">${c.type||'Courrier'} · ${fDate(c.created_at)}${c.read&&!c.archived?' · <span style="color:var(--success)">✓ Lu</span>':''}${c.archived?' · <span style="color:var(--text-muted)">📦 Archivé</span>':''}</div>
+      </div>
+      <div class="ci-actions">
+        <button class="btn btn-pink" onclick="downloadCourrier('${c.file_path}','${c.file_name||'courrier'}','${c.id}')">⬇ Télécharger</button>
+        ${!c.read&&!c.archived?`<button class="btn btn-success" onclick="markRead('${c.id}')">✓ Lu</button>`:''}
+        ${!c.archived?`<button class="btn btn-outline" onclick="archiveCourrier('${c.id}')" title="Archiver">📦</button>`:''}
+      </div>
+    </div>`).join('');
+}
+
+function fileIcon(n=''){if(!n)return'📄';if(n.endsWith('.pdf'))return'📕';if(/\.(jpg|jpeg|png)$/i.test(n))return'🖼️';return'📄';}
+
+async function downloadCourrier(path,name,id) {
+  const {data,error}=await sb.storage.from('courriers').download(path);
+  if(error){showToast('Erreur de téléchargement','error');return;}
+  const url=URL.createObjectURL(data);const a=document.createElement('a');a.href=url;a.download=name;a.click();URL.revokeObjectURL(url);
+  if(!allCourriers.find(c=>c.id===id)?.read)await markRead(id);
+}
+
+async function adminDownload(path,name) {
+  const {data,error}=await sb.storage.from('courriers').download(path);
+  if(error){showToast('Erreur','error');return;}
+  const url=URL.createObjectURL(data);const a=document.createElement('a');a.href=url;a.download=name;a.click();URL.revokeObjectURL(url);
+}
+
+async function markRead(id){await sb.from('courriers').update({read:true}).eq('id',id);const c=allCourriers.find(c=>c.id===id);if(c)c.read=true;renderCourriers();}
+async function archiveCourrier(id){await sb.from('courriers').update({archived:true,read:true}).eq('id',id);const c=allCourriers.find(c=>c.id===id);if(c){c.archived=true;c.read=true;}renderCourriers();showToast('📦 Courrier archivé','info');}
+
+function fDate(iso){return new Date(iso).toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'});}
+function showErr(el,msg){el.textContent=msg;el.style.display='block';}
+function showToast(msg,type='info'){const t=document.getElementById('toast');t.textContent=msg;t.className='toast show '+type;setTimeout(()=>t.classList.remove('show'),3500);}
+
+init();
+</script>
+</body>
+</html>
