@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+  <title>DONA Mailroom — Scanner</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root {
+      --plum: #970C58;
+      --pink: #F81490;
+      --grad: linear-gradient(135deg, #5B1B47 0%, #970C58 50%, #F81490 100%);
+      --cream: #F7F5F1;
+      --white: #FFFFFF;
+      --text: #2A1A24;
+      --text-muted: #9A8090;
+      --border: #E8E0E5;
+      --pink-pale: #FDE8F4;
+      --success: #2D9E6B;
+    }
+
+    * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+
+    body {
+      font-family: 'Outfit', sans-serif;
+      background: var(--cream);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .header {
+      background: var(--grad);
+      padding: 20px 24px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .header .logo { font-size: 24px; }
+    .header .title { color: white; font-size: 18px; font-weight: 700; }
+    .header .subtitle { color: rgba(255,255,255,0.7); font-size: 12px; margin-top: 1px; }
+
+    .content {
+      flex: 1;
+      padding: 24px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .info-card {
+      background: var(--white);
+      border-radius: 16px;
+      padding: 18px 20px;
+      border: 1px solid var(--border);
+    }
+
+    .info-card .ic-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-muted);
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+
+    .info-card .ic-value {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    /* CAMERA ZONE */
+    .camera-zone {
+      background: var(--white);
+      border-radius: 16px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+
+    .camera-zone video {
+      width: 100%;
+      display: block;
+      background: #000;
+      max-height: 55vh;
+      object-fit: cover;
+    }
+
+    .camera-zone canvas { display: none; }
+
+    .camera-controls {
+      padding: 16px;
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+    }
+
+    /* PREVIEW */
+    .photo-preview {
+      display: none;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .photo-preview img {
+      width: 100%;
+      border-radius: 16px;
+      border: 1px solid var(--border);
+      object-fit: cover;
+      max-height: 55vh;
+    }
+
+    /* BUTTONS */
+    .btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 16px 24px;
+      border-radius: 12px;
+      font-family: 'Outfit', sans-serif;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: all 0.15s;
+      width: 100%;
+    }
+
+    .btn-grad {
+      background: var(--grad);
+      color: white;
+    }
+
+    .btn-grad:active { opacity: 0.85; transform: scale(0.98); }
+    .btn-grad:disabled { opacity: 0.5; }
+
+    .btn-outline {
+      background: transparent;
+      border: 1.5px solid var(--border);
+      color: var(--text-muted);
+    }
+
+    .btn-outline:active { background: var(--cream); }
+
+    /* CAPTURE BTN */
+    .capture-btn {
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      background: var(--grad);
+      border: 4px solid white;
+      box-shadow: 0 4px 16px rgba(248,20,144,0.4);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      transition: transform 0.1s;
+    }
+
+    .capture-btn:active { transform: scale(0.92); }
+
+    /* STATUS */
+    .status-card {
+      background: var(--white);
+      border-radius: 16px;
+      padding: 32px 20px;
+      text-align: center;
+      border: 1px solid var(--border);
+      display: none;
+    }
+
+    .status-card .st-icon { font-size: 52px; margin-bottom: 12px; }
+    .status-card h3 { font-size: 20px; font-weight: 700; color: var(--text); }
+    .status-card p { font-size: 14px; color: var(--text-muted); margin-top: 6px; line-height: 1.5; }
+
+    .progress-bar {
+      background: var(--border);
+      border-radius: 20px;
+      height: 6px;
+      overflow: hidden;
+      margin: 16px 0;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: var(--grad);
+      border-radius: 20px;
+      width: 0%;
+      transition: width 0.3s;
+    }
+
+    .switch-camera {
+      width: 48px; height: 48px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.2);
+      border: 1.5px solid var(--border);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo">📬</div>
+  <div>
+    <div class="title">DONA Mailroom</div>
+    <div class="subtitle">Scanner un courrier</div>
+  </div>
+</div>
+
+<div class="content">
+
+  <!-- Info courrier -->
+  <div class="info-card" id="info-card">
+    <div class="ic-label">Courrier à scanner</div>
+    <div class="ic-value" id="desc-label">—</div>
+  </div>
+
+  <!-- Caméra -->
+  <div class="camera-zone" id="camera-zone">
+    <video id="video" autoplay playsinline></video>
+    <canvas id="canvas"></canvas>
+    <div class="camera-controls">
+      <button class="switch-camera" onclick="switchCamera()" title="Changer caméra">🔄</button>
+      <button class="capture-btn" onclick="capturePhoto()">📸</button>
+      <div style="width:48px"></div>
+    </div>
+  </div>
+
+  <!-- Aperçu photo -->
+  <div class="photo-preview" id="photo-preview">
+    <img id="preview-img" src="" alt="Aperçu"/>
+    <div style="display:flex;gap:10px">
+      <button class="btn btn-outline" onclick="retakePhoto()">🔄 Reprendre</button>
+      <button class="btn btn-grad" onclick="sendPhoto()" id="send-btn">📤 Envoyer</button>
+    </div>
+  </div>
+
+  <!-- Status -->
+  <div class="status-card" id="status-card">
+    <div class="st-icon" id="st-icon">⏳</div>
+    <h3 id="st-title">Envoi en cours...</h3>
+    <p id="st-text">Veuillez patienter</p>
+    <div class="progress-bar" id="prog-bar" style="display:none">
+      <div class="progress-fill" id="prog-fill"></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const SUPABASE_URL = 'https://ctreucinpucicbtiofik.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN0cmV1Y2lucHVjaWNidGlvZmlrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2NjQ2OTIsImV4cCI6MjA5NDI0MDY5Mn0.um_XCwUcP_p37zlEUqjTgCG8Vr50QqxgBY2zdmzREEI';
+const { createClient } = supabase;
+const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// Récupérer les params URL
+const params = new URLSearchParams(window.location.search);
+const clientId = params.get('client');
+const desc = params.get('desc') || 'Courrier scanné';
+
+document.getElementById('desc-label').textContent = desc;
+
+let stream = null;
+let capturedBlob = null;
+let facingMode = 'environment'; // caméra arrière par défaut
+
+// Démarrer la caméra
+async function startCamera() {
+  try {
+    if (stream) stream.getTracks().forEach(t => t.stop());
+    stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode, width: { ideal: 1920 }, height: { ideal: 1080 } }
+    });
+    document.getElementById('video').srcObject = stream;
+  } catch(e) {
+    showStatus('❌', 'Caméra inaccessible', 'Autorisez l\'accès à la caméra dans les paramètres de votre navigateur.');
+  }
+}
+
+async function switchCamera() {
+  facingMode = facingMode === 'environment' ? 'user' : 'environment';
+  await startCamera();
+}
+
+function capturePhoto() {
+  const video = document.getElementById('video');
+  const canvas = document.getElementById('canvas');
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  canvas.getContext('2d').drawImage(video, 0, 0);
+
+  canvas.toBlob(blob => {
+    capturedBlob = blob;
+    const url = URL.createObjectURL(blob);
+    document.getElementById('preview-img').src = url;
+    document.getElementById('camera-zone').style.display = 'none';
+    document.getElementById('photo-preview').style.display = 'flex';
+  }, 'image/jpeg', 0.92);
+}
+
+function retakePhoto() {
+  capturedBlob = null;
+  document.getElementById('photo-preview').style.display = 'none';
+  document.getElementById('camera-zone').style.display = 'block';
+}
+
+async function sendPhoto() {
+  if (!capturedBlob || !clientId) return;
+
+  document.getElementById('photo-preview').style.display = 'none';
+  document.getElementById('status-card').style.display = 'block';
+  document.getElementById('prog-bar').style.display = 'block';
+
+  animProg();
+
+  const fileName = `scan_${Date.now()}.jpg`;
+  const filePath = `${clientId}/${fileName}`;
+
+  const { error: upErr } = await sb.storage.from('courriers').upload(filePath, capturedBlob, {
+    contentType: 'image/jpeg'
+  });
+
+  if (upErr) {
+    showStatus('❌', 'Erreur d\'envoi', upErr.message);
+    return;
+  }
+
+  const { error: dbErr } = await sb.from('courriers').insert({
+    client_id: clientId,
+    file_path: filePath,
+    file_name: fileName,
+    description: desc,
+    type: 'Courrier ordinaire',
+    read: false,
+    archived: false
+  });
+
+  if (dbErr) {
+    showStatus('❌', 'Erreur base de données', dbErr.message);
+    return;
+  }
+
+  document.getElementById('prog-fill').style.width = '100%';
+  setTimeout(() => {
+    showStatus('✅', 'Courrier envoyé !', 'Le courrier a bien été ajouté à DONA Mailroom. Vous pouvez fermer cette page.', false);
+    if (stream) stream.getTracks().forEach(t => t.stop());
+  }, 500);
+}
+
+function showStatus(icon, title, text, showProg = true) {
+  document.getElementById('camera-zone').style.display = 'none';
+  document.getElementById('photo-preview').style.display = 'none';
+  document.getElementById('status-card').style.display = 'block';
+  document.getElementById('prog-bar').style.display = showProg ? 'block' : 'none';
+  document.getElementById('st-icon').textContent = icon;
+  document.getElementById('st-title').textContent = title;
+  document.getElementById('st-text').textContent = text;
+}
+
+function animProg() {
+  let p = 0;
+  const fill = document.getElementById('prog-fill');
+  const iv = setInterval(() => {
+    p = Math.min(p + Math.random() * 20, 90);
+    fill.style.width = p + '%';
+    if (p >= 90) clearInterval(iv);
+  }, 200);
+}
+
+// Démarrer automatiquement
+startCamera();
+</script>
+</body>
+</html>
